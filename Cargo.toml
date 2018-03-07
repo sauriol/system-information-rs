@@ -1,0 +1,7 @@
+[package]
+name = "system_information"
+version = "0.1.0"
+authors = ["Jack Sauriol <saurioljohn@gmail.com>"]
+
+[dependencies]
+regex = "0.2.6"
