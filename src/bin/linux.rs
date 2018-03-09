@@ -3,6 +3,9 @@ extern crate regex;
 use regex::Regex;
 use std::process::Command;
 use std::path::Path;
+use std::fs::File;
+use std::io::BufReader;
+use std::io::BufRead;
 
 struct DistroInfo {
     distro: Option<String>,
@@ -53,5 +56,21 @@ fn get_distro() -> Option<String> {
 
 /// Parses the /etc/os-release file and returns the PRETTY_NAME
 fn parse_os_release() -> Option<String> {
+    let path = Path::new("/etc/os-release");
+    let pretty_name_regex = Regex::new(r"").unwrap();
 
+    let os_release = match File::open(&path) {
+        Ok(file) => BufReader::new(&file),
+        Err(_) => return None
+    };
+
+    for line in os_release.lines() {
+        let l : String = line.unwrap();
+
+        if pretty_name_regex.is_match(&line) {
+
+        }
+    }
+
+    Some("test string".to_owned())
 }
