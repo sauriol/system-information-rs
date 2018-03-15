@@ -4,9 +4,12 @@ extern crate winutil;
 use std::path::Path;
 use std::fs::File;
 use std::io::BufReader;
+use std::io::BufRead;
 use std::io::Read;
 use std::process::Command;
 
+#[derive(Debug)]
+#[derive(PartialEq)]
 pub enum OSType {
     Arch,
     CentOS,
@@ -22,8 +25,8 @@ pub enum OSType {
 
 /// Holds info about OS type and version
 pub struct OSInformation {
-    os_type: OSType,
-    version: String
+    pub os_type: OSType,
+    pub version: String
 }
 
 fn unknown_os() -> OSInformation {
@@ -43,7 +46,7 @@ pub fn get_hostname() -> Option<String> {
     };
 
     let mut hostname = String::new();
-    hostname_file.read_to_string(&mut hostname);
+    hostname_file.read_to_string(&mut hostname).ok();
 
     Some(hostname.trim().to_owned())
 }
@@ -107,6 +110,12 @@ pub fn get_os() -> OSInformation {
             version: "Not yet supported".to_owned()
         }
     }
+    else if Path::new("/etc/SuSE-release").exists() {
+        OSInformation {
+            os_type: OSType::OpenSUSE,
+            version: "Not yet supported".to_owned()
+        }
+    }
     else if Path::new("/etc/redhat-release").exists() {
         OSInformation {
             os_type: OSType::Redhat,
@@ -123,6 +132,53 @@ pub fn get_os() -> OSInformation {
 
 #[cfg(target_os = "linux")]
 fn parse_os_release() -> OSInformation {
+    let path = Path::new("/etc/os-release");
+    let file = match File::open(&path) {
+        Ok(file) => file,
+        Err(why) => panic!(why),
+    };
+    let file_read = BufReader::new(&file);
+
+    let mut os: OSType = OSType::Unknown;
+
+    for line in file_read.lines() {
+        let l = line.unwrap();
+
+        let l_vec: Vec<&str> = l.split('"').collect();
+
+        if l_vec[0] == "NAME=".to_owned() {
+            os = match_os(l_vec[1]);
+            break;
+        }
+    }
+
+    OSInformation {
+        os_type: os,
+        version: "Not yet supported".to_owned()
+    }
+}
+
+/// all of these need to be tested and some might not work
+#[cfg(target_os = "linux")]
+fn match_os(os_str: &str) -> OSType {
+    if os_str == "Arch Linux".to_owned() {
+        return OSType::Arch;
+    }
+    else if os_str == "CentOS Linux".to_owned() {
+        return OSType::CentOS;
+    }
+    else if os_str == "Debian GNU/Linux".to_owned() {
+        return OSType::Debian;
+    }
+    else if os_str == "Fedora".to_owned() {
+        return OSType::Fedora;
+    }
+    else if os_str == "Red Hat Enterprise Linux Server".to_owned() {
+        return OSType::Redhat;
+    }
+    else {
+        return OSType::Unknown
+    }
 
 }
 
@@ -154,6 +210,16 @@ mod tests {
     fn username() {
         let username = get_username().unwrap();
         assert_eq!(username, "[username]");
+    }
+
+    #[test]
+    fn os() {
+        let os = get_os();
+        let os_type = os.os_type;
+        let version = os.version;
+
+        assert_eq!(os_type, OSType::Unknown);
+        assert_eq!(version, "Not yet supported".to_owned());
     }
 
 }
