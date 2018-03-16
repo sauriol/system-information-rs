@@ -88,37 +88,37 @@ pub fn get_os() -> OSInformation {
     if Path::new("/etc/arch-release").exists() {
         OSInformation {
             os_type: OSType::Arch,
-            version: "Not yet supported".to_owned()
+            version: get_ver()
         }
     }
     else if Path::new("/etc/debian_version").exists() {
         OSInformation {
             os_type: OSType::Debian,
-            version: "Not yet supported".to_owned()
+            version: get_ver()
         }
     }
     else if Path::new("/etc/fedora-release").exists() {
         OSInformation {
             os_type: OSType::Fedora,
-            version: "Not yet supported".to_owned()
+            version: get_ver()
         }
     }
     else if Path::new("/etc/gentoo-release").exists() {
         OSInformation {
             os_type: OSType::Gentoo,
-            version: "Not yet supported".to_owned()
+            version: get_ver()
         }
     }
     else if Path::new("/etc/SuSE-release").exists() {
         OSInformation {
             os_type: OSType::OpenSUSE,
-            version: "Not yet supported".to_owned()
+            version: get_ver()
         }
     }
     else if Path::new("/etc/redhat-release").exists() {
         OSInformation {
             os_type: OSType::Redhat,
-            version: "Not yet supported".to_owned()
+            version: get_ver()
         }
     }
     else if Path::new("/etc/os-release").exists() {
@@ -133,14 +133,13 @@ pub fn get_os() -> OSInformation {
 fn parse_os_release() -> OSInformation {
     let path = Path::new("/etc/os-release");
     let file = match File::open(&path) {
-        Ok(file) => file,
-        Err(why) => panic!(why),
+        Ok(file) => BufReader::new(file),
+        Err(why) => panic!("{:?}", why),
     };
-    let file_read = BufReader::new(&file);
 
     let mut os: OSType = OSType::Unknown;
 
-    for line in file_read.lines() {
+    for line in file.lines() {
         let l = line.unwrap();
 
         let l_vec: Vec<&str> = l.split('"').collect();
@@ -153,7 +152,7 @@ fn parse_os_release() -> OSInformation {
 
     OSInformation {
         os_type: os,
-        version: "Not yet supported".to_owned()
+        version: get_ver()
     }
 }
 
@@ -179,6 +178,21 @@ fn match_os(os_str: &str) -> OSType {
         return OSType::Unknown
     }
 
+}
+
+#[cfg(target_os = "linux")]
+fn get_ver() -> String {
+    let path = Path::new("/proc/sys/kernel/osrelease");
+    let mut osrelease = match File::open(&path) {
+        Ok(file) => file,
+        Err(why) => panic!("{:?}", why),
+    };
+
+    let mut ver = String::new();
+
+    osrelease.read_to_string(&mut ver).ok();
+
+    ver.trim().to_owned()
 }
 
 // I don't know how to get just the version number for this
@@ -218,7 +232,7 @@ mod tests {
         let version = os.version;
 
         assert_eq!(os_type, OSType::Unknown);
-        assert_eq!(version, "Not yet supported".to_owned());
+        assert_eq!(version, "0.0.0".to_owned());
     }
 
 }
