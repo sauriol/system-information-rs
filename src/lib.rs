@@ -23,7 +23,7 @@ pub enum OSType {
     Unknown
 }
 
-/// Holds info about OS type and version
+// Holds info about OS type and version
 pub struct OSInformation {
     pub os_type: OSType,
     pub version: String
@@ -69,18 +69,17 @@ pub fn get_username() -> Option<String> {
     winutil::get_user_name()
 }
 
+// Needs to be tested
 #[cfg(target_os = "macos")]
 pub fn get_os() -> OSInformation {
-    let sw_vers = match Command::new("sw_vers").output() {
-        Ok(sw_vers) => sw_vers,
+    let sw_vers: String = match Command::new("sw_vers").arg("-productVersion").output() {
+        Ok(sw_vers) => sw_vers.trim().to_owned(),
         Err(why) => panic!("{:?}", why)
     };
 
-    /// Need to implement some getting of the product_version from sw_vers
-
     OSInformation {
         os_type: OSType::OSX,
-        version: "Not yet supported".to_owned()
+        version: sw_vers
     }
 }
 
@@ -158,7 +157,7 @@ fn parse_os_release() -> OSInformation {
     }
 }
 
-/// all of these need to be tested and some might not work
+// all of these need to be tested and some might not work
 #[cfg(target_os = "linux")]
 fn match_os(os_str: &str) -> OSType {
     if os_str == "Arch Linux".to_owned() {
@@ -182,7 +181,7 @@ fn match_os(os_str: &str) -> OSType {
 
 }
 
-/// I don't know how to get just the version number for this
+// I don't know how to get just the version number for this
 #[cfg(target_os = "windows")]
 pub fn get_os() -> Option<OSInformation> {
     let win_ver = match Command::new("ver").output() {
