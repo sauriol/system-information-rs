@@ -8,6 +8,9 @@ use std::io::BufRead;
 use std::io::Read;
 use std::process::Command;
 
+/// Enum listing all currently supported OS
+///
+/// Note: testing has not been completed with all.
 #[derive(Debug)]
 #[derive(PartialEq)]
 pub enum OSType {
@@ -23,12 +26,19 @@ pub enum OSType {
     Unknown
 }
 
-// Holds info about OS type and version
+/// Contains the OS and version.
+///
+/// For Linux, the version number will be the version of
+/// the kernel and for Windows, the version number will be
+/// the number provided by `ver`. For MacOS, the version
+/// number is the product version number from `sw_vers`
 pub struct OSInformation {
     pub os_type: OSType,
     pub version: String
 }
 
+/// Generates a generic OSInformation for an unknown or 
+/// undetectable OS.
 fn unknown_os() -> OSInformation {
     OSInformation {
         os_type: OSType::Unknown,
@@ -36,6 +46,10 @@ fn unknown_os() -> OSInformation {
     }
 }
 
+/// Gets the hostname on MacOS and Linux systems.
+///
+/// Reads from /proc/sys/kernel/hostname to find the
+/// current hostname. Currently untested on MacOS.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub fn get_hostname() -> Option<String> {
     let path = Path::new("/proc/sys/kernel/hostname");
@@ -51,11 +65,16 @@ pub fn get_hostname() -> Option<String> {
     Some(hostname.trim().to_owned())
 }
 
+/// Gets the hostname for Windows systems.
 #[cfg(windows)]
 pub fn get_hostname() -> Option<String> {
     winutil::get_computer_name()
 }
 
+/// Gets the current username for MacOS and Linux systems.
+///
+/// Currently untested on MacOS and I'm not certain that 
+/// the `id` command exists on all systems.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub fn get_username() -> Option<String> {
     match Command::new("id").args(&["-u", "-n"]).output() {
@@ -64,12 +83,15 @@ pub fn get_username() -> Option<String> {
     }
 }
 
+/// Gets the current username for Windows systems.
 #[cfg(windows)]
 pub fn get_username() -> Option<String> {
     winutil::get_user_name()
 }
 
-// Needs to be tested
+/// Generates an OSInformation for MacOS.
+///
+/// Currently untested.
 #[cfg(target_os = "macos")]
 pub fn get_os() -> OSInformation {
     let sw_vers: String = match Command::new("sw_vers").arg("-productVersion").output() {
@@ -83,6 +105,9 @@ pub fn get_os() -> OSInformation {
     }
 }
 
+/// Generates an OSInformation for Linux systems.
+///
+/// Currently only tested on Arch Linux.
 #[cfg(target_os = "linux")]
 pub fn get_os() -> OSInformation {
     if Path::new("/etc/arch-release").exists() {
@@ -129,6 +154,10 @@ pub fn get_os() -> OSInformation {
     }
 }
 
+/// Helper function for get_os()
+///
+/// Parses /etc/os-release to get the OS name.
+/// Currently untested.
 #[cfg(target_os = "linux")]
 fn parse_os_release() -> OSInformation {
     let path = Path::new("/etc/os-release");
@@ -156,7 +185,10 @@ fn parse_os_release() -> OSInformation {
     }
 }
 
-// all of these need to be tested and some might not work
+/// Helper function for parse_os_release().
+///
+/// Matches the NAME from /etc/os-release to the
+/// corresponding distro.
 #[cfg(target_os = "linux")]
 fn match_os(os_str: &str) -> OSType {
     if os_str == "Arch Linux".to_owned() {
@@ -180,6 +212,10 @@ fn match_os(os_str: &str) -> OSType {
 
 }
 
+/// Gets kernel version of Linux systems.
+///
+/// Reads from /proc/sys/kernel/osrelease to find the
+/// current kernel version.
 #[cfg(target_os = "linux")]
 fn get_ver() -> String {
     let path = Path::new("/proc/sys/kernel/osrelease");
@@ -195,7 +231,10 @@ fn get_ver() -> String {
     ver.trim().to_owned()
 }
 
-// I don't know how to get just the version number for this
+/// Gets version of Windows systems.
+///
+/// Uses the DOS `ver` command.
+/// [Table for interpretation](https://en.wikipedia.org/wiki/Ver_(command)#Version_list)
 #[cfg(target_os = "windows")]
 pub fn get_os() -> Option<OSInformation> {
     let win_ver = match Command::new("ver").output() {
