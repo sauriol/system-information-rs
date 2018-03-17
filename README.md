@@ -4,7 +4,7 @@ A library to detect information about the local system written in Rust.
 
 ## TODO ##
   * ~~Detect OS~~
-    * Test on linux
+    * ~~Test on linux~~
       * Do more testing on distros that aren't Arch
     * Test on Windows
     * Test on MacOS
