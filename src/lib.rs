@@ -231,9 +231,9 @@ fn get_ver() -> String {
     ver.trim().to_owned()
 }
 
-/// Gets version of Windows systems.
+/// Generates an OSInformation for Windows systems.
 ///
-/// Uses the DOS `ver` command.
+/// Uses the DOS `ver` command for the version.
 /// [Table for interpretation](https://en.wikipedia.org/wiki/Ver_(command)#Version_list)
 #[cfg(target_os = "windows")]
 pub fn get_os() -> Option<OSInformation> {
