@@ -37,7 +37,7 @@ pub struct OSInformation {
     pub version: String
 }
 
-/// Generates a generic OSInformation for an unknown or 
+/// Generates a generic OSInformation for an unknown or
 /// undetectable OS.
 fn unknown_os() -> OSInformation {
     OSInformation {
@@ -73,7 +73,7 @@ pub fn get_hostname() -> Option<String> {
 
 /// Gets the current username for MacOS and Linux systems.
 ///
-/// Currently untested on MacOS and I'm not certain that 
+/// Currently untested on MacOS and I'm not certain that
 /// the `id` command exists on all systems.
 #[cfg(any(target_os = "macos", target_os = "linux"))]
 pub fn get_username() -> Option<String> {
@@ -234,17 +234,18 @@ fn get_ver() -> String {
 /// Generates an OSInformation for Windows systems.
 ///
 /// Uses the DOS `ver` command for the version.
-/// [Table for interpretation](https://en.wikipedia.org/wiki/Ver_(command)#Version_list)
+/// [Table for interpretation.](https://en.wikipedia.org/wiki/Ver_(command)#Version_list)
+/// Currently untested.
 #[cfg(target_os = "windows")]
 pub fn get_os() -> Option<OSInformation> {
     let win_ver = match Command::new("ver").output() {
-        Ok(ver) => ver,
+        Ok(ver) => String::from_utf8(ver.stdout).unwrap().trim().to_owned(),
         Err(why) => panic!("{:?}", why)
     };
 
     OSInformation {
         os_type: OSType::Windows,
-        version: "Not yet supported".to_owned()
+        version: win_ver,
     }
 }
 
