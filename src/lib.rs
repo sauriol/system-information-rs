@@ -37,6 +37,15 @@ pub struct OSInformation {
     pub version: String
 }
 
+/// Contains information about the filesystem
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub struct DiskInfo {
+    pub total: u64,
+    pub free: u64,
+    pub in_use: u64,
+}
+
 /// Generates a generic OSInformation for an unknown or
 /// undetectable OS.
 fn unknown_os() -> OSInformation {
@@ -249,6 +258,82 @@ pub fn get_os() -> Option<OSInformation> {
     }
 }
 
+/// Generates a DiskInfo for Windows and unix systems
+///
+/// Runs system_information/src/cpp/disk to get total,
+/// free, and in use space for the C or / filesystems.
+pub fn get_disk_info() -> DiskInfo {
+    let mut path = std::env::current_dir().unwrap();
+    path.push("src");
+    path.push("cpp");
+    path.push("disk");
+
+    let disk_path = path.to_str().unwrap().to_owned();
+
+    let mut fs = "";
+    if cfg!(windows) {
+        fs = "C:"
+    }
+    else if cfg!(unix) {
+        fs = "/"
+    }
+
+    let disk_info = match Command::new(disk_path).arg(fs).output() {
+        Ok(info) => String::from_utf8(info.stdout).unwrap(),
+        Err(why) => panic!(why),
+    };
+
+    let info_vec: Vec<&str> = disk_info.split("\n").collect();
+
+    DiskInfo {
+        total: info_vec[0].parse().unwrap(),
+        free: info_vec[1].parse().unwrap(),
+        in_use: info_vec[2].parse().unwrap(),
+    }
+}
+
+/// Makes the output from get_disk_info() human readable.
+pub fn get_readable_disk_info() -> Vec<String> {
+    let disk_info = get_disk_info();
+
+    let mut readable_info = Vec::new();
+
+//    let readable_info = vec![readable_bytes(disk_info.total, true),
+//        readable_bytes(disk_info.free, true),
+//        readable_bytes(disk_info.in_use, true)];
+
+    readable_info.push(readable_bytes(disk_info.total,  true));
+    readable_info.push(readable_bytes(disk_info.free,   true));
+    readable_info.push(readable_bytes(disk_info.in_use, true));
+
+    return readable_info
+}
+
+/// Helper function for get_readable_disk_info()
+fn readable_bytes(size: u64, si: bool) -> String {
+    let mut size_cpy = size;
+
+    let byte_units;
+    let unit;
+
+    if si {
+        byte_units = [" B", " kB", " MB", " GB", " TB", " PB", " EB", " ZB", " YB"];
+        unit = 1000;
+    }
+    else {
+        byte_units = [" B", " KiB", " MiB", " GiB", " TiB", " PiB", " EiB", " ZiB", " YiB"];
+        unit = 1024;
+    }
+
+    let mut count = 0;
+    while (size_cpy >= unit) && (count < byte_units.len() - 1) {
+        count += 1;
+        size_cpy = size_cpy / unit;
+    }
+
+    return size_cpy.to_string() + byte_units[count];
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -268,11 +353,27 @@ mod tests {
     #[test]
     fn os() {
         let os = get_os();
-        let os_type = os.os_type;
-        let version = os.version;
-
+        let os_type = os.os_type; let version = os.version;
         assert_eq!(os_type, OSType::Unknown);
         assert_eq!(version, "0.0.0".to_owned());
+    }
+
+    #[test]
+    fn disk() {
+        let disk = get_disk_info();
+
+        assert_eq!(disk, DiskInfo {
+            total: 0,
+            free: 0,
+            in_use: 0,
+        });
+    }
+
+    #[test]
+    fn readable_disk() {
+        let readable_info = get_readable_disk_info();
+
+        assert_eq!(readable_info, vec!["".to_owned(), "".to_owned(), "".to_owned()]);
     }
 
 }
