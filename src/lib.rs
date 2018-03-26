@@ -46,6 +46,14 @@ pub struct DiskInfo {
     pub in_use: u64,
 }
 
+#[derive(Debug)]
+#[derive(PartialEq)]
+pub struct MemInfo {
+    pub total: u64,
+    pub free: u64,
+    pub in_use: u64
+}
+
 /// Generates a generic OSInformation for an unknown or
 /// undetectable OS.
 fn unknown_os() -> OSInformation {
@@ -334,6 +342,119 @@ fn readable_bytes(size: u64, si: bool) -> String {
     return size_cpy.to_string() + byte_units[count];
 }
 
+/// Gets memory information for Linux, Windows, and MacOS
+///
+/// MacOS currently isn't implemented. I'm also not sure
+/// if having a function that uses cfg!() to run the
+/// correct function based on os is better or worse than
+/// compiling different version of the same function per
+/// OS using #[cfg()]
+pub fn get_mem_info() -> MemInfo {
+    if cfg!(target_os="linux") {
+        get_mem_info_linux()
+    }
+    else if cfg!(windows) {
+        get_mem_info_windows()
+    }
+    else {
+        MemInfo {
+            total: 0,
+            free: 0,
+            in_use: 0
+        }
+    }
+}
+
+/// Gets memory information for Linux, returns MemInfo
+///
+/// Reads from /proc/meminfo to get info
+fn get_mem_info_linux() -> MemInfo {
+    let path = Path::new("/proc/meminfo");
+    let meminfo = match File::open(&path) {
+        Ok(file) => BufReader::new(file),
+        Err(why) => panic!("{:?}", why),
+    };
+
+    let mut mem_total: u64 = 0;
+    let mut mem_free: u64 = 0;
+
+    for line in meminfo.lines() {
+        let l = line.unwrap();
+
+        let l_vec: Vec<&str> = l.split_whitespace().collect();
+
+        if l_vec[0] == "MemTotal:" {
+            mem_total = l_vec[1].parse().unwrap();
+        }
+        else if l_vec[0] == "MemFree:" {
+            mem_free = l_vec[1].parse().unwrap();
+        }
+    }
+
+    MemInfo {
+        total: mem_total * 1024,
+        free: mem_free * 1024,
+        in_use: (mem_total * 1024) - (mem_free * 1024)
+    }
+}
+
+/// Gets memory information for Windows
+///
+/// Use `make windows` to build the relevant C++
+/// files for Windows, they won't compile if you
+/// aren't on Windows because they need windows.h
+fn get_mem_info_windows() -> MemInfo {
+    let mut path = std::env::current_dir().unwrap();
+    path.push("src");
+    path.push("cpp");
+    path.push("mem-windows");
+
+    let mem_path = path.to_str().unwrap().to_owned();
+
+    let mem_info = match Command::new(mem_path).output() {
+        Ok(info) => String::from_utf8(info.stdout).unwrap(),
+        Err(why) => panic!(why),
+    };
+
+    let info_vec: Vec<&str> = mem_info.split("\n").collect();
+
+    MemInfo {
+        total: info_vec[0].parse().unwrap(),
+        free: info_vec[1].parse().unwrap(),
+        in_use: info_vec[2].parse().unwrap()
+    }
+}
+
+/// Gets memory information for MacOS
+///
+/// Currently not implemented
+fn get_mem_info_macos() -> MemInfo {
+
+    MemInfo {
+        total: 0,
+        free: 0,
+        in_use: 0
+    }
+}
+
+/// Converts the given MemInfo into human
+/// readable strings
+///
+/// It currently uses the 1024 non-SI based
+/// conversion for RAM, I'm not certain that
+/// is the correct way to do it
+pub fn get_readable_mem_info() -> Vec<String> {
+    let mem_info = get_mem_info();
+
+    let mut readable_info = Vec::new();
+
+    readable_info.push(readable_bytes(mem_info.total, false));
+    readable_info.push(readable_bytes(mem_info.free, false));
+    readable_info.push(readable_bytes(mem_info.in_use, false));
+
+    return readable_info
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -374,6 +495,24 @@ mod tests {
         let readable_info = get_readable_disk_info();
 
         assert_eq!(readable_info, vec!["".to_owned(), "".to_owned(), "".to_owned()]);
+    }
+
+    #[test]
+    fn mem() {
+        let mem = get_mem_info();
+
+        assert_eq!(mem, MemInfo {
+            total: 0,
+            free: 0,
+            in_use: 0
+        });
+    }
+
+    #[test]
+    fn readable_mem() {
+        let readable_mem = get_readable_mem_info();
+
+        assert_eq!(readable_mem, vec!["".to_owned(), "".to_owned(), "".to_owned()]);
     }
 
 }
