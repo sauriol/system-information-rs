@@ -17,7 +17,6 @@ A library to detect information about the local system written in Rust.
     * Test on Windows
     * Test on MacOS
   * ~~Detect disk space~~
-    * Works™
   * ~~Detect memory~~
     * Implement on MacOS
     * Test on Windows
