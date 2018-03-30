@@ -1,5 +1,6 @@
 #[cfg(windows)]
 extern crate winutil;
+extern crate regex;
 
 use std::path::Path;
 use std::fs::File;
@@ -7,6 +8,7 @@ use std::io::BufReader;
 use std::io::BufRead;
 use std::io::Read;
 use std::process::Command;
+use regex::Regex;
 
 /// Enum listing all currently supported OS
 ///
@@ -39,20 +41,25 @@ pub struct OSInformation {
 }
 
 /// Contains information about the filesystem
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct DiskInfo {
     pub total: Option<u64>,
     pub free: Option<u64>,
     pub in_use: Option<u64>,
 }
 
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct MemInfo {
     pub total: Option<u64>,
     pub free: Option<u64>,
     pub in_use: Option<u64>
+}
+
+#[derive(Debug, PartialEq)]
+pub struct CPUInfo {
+    pub num: Option<usize>,
+    pub model: Option<String>,
+    pub mhz: Option<String>
 }
 
 /// Generates a generic OSInformation for an unknown or
@@ -417,7 +424,7 @@ fn get_mem_info() -> MemInfo {
     };
 
     let mem_vec: Vec<&str> = mem_info.split_whitespace().collect();
-    
+
     let mem_total = mem_vec[1].parse().unwrap();
 
     MemInfo {
@@ -443,6 +450,63 @@ pub fn get_readable_mem_info() -> Vec<String> {
     readable_info.push(readable_bytes(mem_info.in_use.unwrap(), false));
 
     return readable_info
+}
+
+#[cfg(target_os = "linux")]
+pub fn get_cpu_info() -> CPUInfo {
+    let path = Path::new("/proc/cpuinfo");
+
+    let mut cpu_file = match File::open(&path) {
+        Ok(file) => BufReader::new(file),
+        Err(why) => panic!(why)
+    };
+
+    let mut cpuinfo = String::new();
+    cpu_file.read_to_string(&mut cpuinfo).ok();
+
+    CPUInfo {
+        num: get_cpu_num_linux(&cpuinfo),
+        model: get_cpu_model_linux(&cpuinfo),
+        mhz: get_cpu_mhz_linux(&cpuinfo)
+    }
+
+}
+
+#[cfg(target_os = "linux")]
+fn get_cpu_num_linux(cpuinfo: &str) -> Option<usize> {
+    let re = Regex::new(r"processor\s+:\s\d").unwrap();
+
+    let iter = re.captures_iter(&cpuinfo);
+
+    return Some(iter.count());
+}
+
+#[cfg(target_os = "linux")]
+fn get_cpu_model_linux(cpuinfo: &str) -> Option<String> {
+    let re = Regex::new(r"model\sname\s+:.+").unwrap();
+
+    let mat = re.find(&cpuinfo).unwrap();
+
+    let model_vec: Vec<&str> = cpuinfo[mat.start()..mat.end()].split(":").collect();
+
+    let cpu_model = model_vec[1].trim();
+
+    return Some(cpu_model.to_owned());
+
+}
+
+#[cfg(target_os = "linux")]
+fn get_cpu_mhz_linux(cpuinfo: &str) -> Option<String> {
+    let re = Regex::new(r"cpu\sMHz\s+:.+").unwrap();
+
+    let mat = re.find(&cpuinfo).unwrap();
+
+    let mhz_vec: Vec<&str> = cpuinfo[mat.start()..mat.end()].split(":").collect();
+
+    let cpu_mhz = mhz_vec[1].trim();
+
+    return Some(cpu_mhz.to_owned());
+
 }
 
 #[cfg(test)]
@@ -503,6 +567,17 @@ mod tests {
         let readable_mem = get_readable_mem_info();
 
         assert_eq!(readable_mem, vec!["".to_owned(), "".to_owned(), "".to_owned()]);
+    }
+
+    #[test]
+    fn cpu_info() {
+        let cpu_info = get_cpu_info();
+
+        assert_eq!(cpu_info, CPUInfo {
+            num: Some(0),
+            model: Some("".to_owned()),
+            mhz: Some("".to_owned())
+        })
     }
 
 }
