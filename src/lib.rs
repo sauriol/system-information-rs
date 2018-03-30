@@ -509,6 +509,52 @@ fn get_cpu_mhz_linux(cpuinfo: &str) -> Option<String> {
 
 }
 
+#[cfg(target_os = "macos")]
+pub fn get_cpu_info() -> CPUInfo {
+
+    CPUInfo {
+        num: get_cpu_num_macos(),
+        model: get_cpu_model_macos(),
+        mhz: get_cpu_mhz_macos()
+    }
+}
+
+#[cfg(target_os = "macos")]
+fn get_cpu_num_macos() -> Some(usize) {
+    let num = match Command::new("sysctl").arg("hw.ncpu").output() {
+        Ok(output) => String::from_utf8(output.stdout).unwrap(),
+        Err(why) => panic!(why)
+    };
+
+    let num_vec: Vec<&str> = num.split(":").collect();
+    let cpu_num = num_vec[1].parse();
+    return Some(cpu_num);
+}
+
+#[cfg(target_os = "macos")]
+fn get_cpu_model_macos() -> Option<String> {
+    let model = match Command::new("sysctl").arg("hw.ncpu").output() {
+        Ok(output) => String::from_utf8(output.stdout).unwrap(),
+        Err(why) => panic!(why)
+    };
+
+    let model_vec: Vec<&str> = model.split(":").collect();
+    let cpu_model = model_vec[1].trim().to_owned();
+    return Some(cpu_model);
+}
+
+#[cfg(target_os = "macos")]
+fn get_cpu_mhz_macos() -> Option<String> {
+    let mhz = match Command::new("sysctl").arg("hw.cpufrequency").output() {
+        Ok(output) => String::from_utf8(output.stdout).unwrap(),
+        Err(why) => panic!(why)
+    };
+
+    let mhz_vec: Vec<&str> = mhz.split(":").collect();
+    let cpu_mhz = mhz_vec[1].trim().to_owned();
+    return Some(cpu_mhz);
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
