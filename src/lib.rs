@@ -314,10 +314,6 @@ pub fn get_readable_disk_info() -> Vec<String> {
 
     let mut readable_info = Vec::new();
 
-//    let readable_info = vec![readable_bytes(disk_info.total, true),
-//        readable_bytes(disk_info.free, true),
-//        readable_bytes(disk_info.in_use, true)];
-
     readable_info.push(readable_bytes(disk_info.total.unwrap(),  true));
     readable_info.push(readable_bytes(disk_info.free.unwrap(),   true));
     readable_info.push(readable_bytes(disk_info.in_use.unwrap(), true));
@@ -445,9 +441,15 @@ pub fn get_readable_mem_info() -> Vec<String> {
 
     let mut readable_info = Vec::new();
 
-    readable_info.push(readable_bytes(mem_info.total.unwrap(), false));
-    readable_info.push(readable_bytes(mem_info.free.unwrap(), false));
-    readable_info.push(readable_bytes(mem_info.in_use.unwrap(), false));
+    if mem_info.total.is_some() {
+        readable_info.push(readable_bytes(mem_info.total.unwrap(), false));
+    } else { readable_info.push("".to_owned()); }
+    if mem_info.free.is_some() {
+        readable_info.push(readable_bytes(mem_info.free.unwrap(), false));
+    } else { readable_info.push("".to_owned()); }
+    if mem_info.in_use.is_some() {
+        readable_info.push(readable_bytes(mem_info.in_use.unwrap(), false));
+    } else { readable_info.push("".to_owned()); }
 
     return readable_info
 }
@@ -520,20 +522,20 @@ pub fn get_cpu_info() -> CPUInfo {
 }
 
 #[cfg(target_os = "macos")]
-fn get_cpu_num_macos() -> Some(usize) {
+fn get_cpu_num_macos() -> Option<usize> {
     let num = match Command::new("sysctl").arg("hw.ncpu").output() {
         Ok(output) => String::from_utf8(output.stdout).unwrap(),
         Err(why) => panic!(why)
     };
 
     let num_vec: Vec<&str> = num.split(":").collect();
-    let cpu_num = num_vec[1].parse();
+    let cpu_num = num_vec[1].trim().parse().unwrap();
     return Some(cpu_num);
 }
 
 #[cfg(target_os = "macos")]
 fn get_cpu_model_macos() -> Option<String> {
-    let model = match Command::new("sysctl").arg("hw.ncpu").output() {
+    let model = match Command::new("sysctl").arg("machdep.cpu.brand_string").output() {
         Ok(output) => String::from_utf8(output.stdout).unwrap(),
         Err(why) => panic!(why)
     };
@@ -551,8 +553,9 @@ fn get_cpu_mhz_macos() -> Option<String> {
     };
 
     let mhz_vec: Vec<&str> = mhz.split(":").collect();
-    let cpu_mhz = mhz_vec[1].trim().to_owned();
-    return Some(cpu_mhz);
+    let mhz_string = mhz_vec[1].trim().to_owned();
+    let cpu_mhz: u64 = mhz_string.parse().unwrap();
+    return Some((cpu_mhz / 1000000).to_string());
 }
 
 #[cfg(test)]
