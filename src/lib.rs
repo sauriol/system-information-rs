@@ -513,7 +513,6 @@ fn get_cpu_mhz_linux(cpuinfo: &str) -> Option<String> {
 
 #[cfg(target_os = "macos")]
 pub fn get_cpu_info() -> CPUInfo {
-
     CPUInfo {
         num: get_cpu_num_macos(),
         model: get_cpu_model_macos(),
@@ -556,6 +555,30 @@ fn get_cpu_mhz_macos() -> Option<String> {
     let mhz_string = mhz_vec[1].trim().to_owned();
     let cpu_mhz: u64 = mhz_string.parse().unwrap();
     return Some((cpu_mhz / 1000000).to_string());
+}
+
+#[cfg(target_os = "windows")]
+pub fn get_cpu_info() -> CPUInfo {
+    CPUInfo {
+        num: get_cpu_num_macos(),
+        model: get_cpu_model_macos(),
+        mhz: get_cpu_mhz_macos()
+    }
+}
+
+#[cfg(target_os = "windows")]
+fn get_cpu_num_windows() -> Option<usize> {
+
+}
+
+#[cfg(target_os = "windows")]
+fn get_cpu_model_windows() -> Option<String> {
+
+}
+
+#[cfg(target_os = "windows")]
+fn get_cpu_mhz_windows() -> Option<String> {
+
 }
 
 #[cfg(test)]
