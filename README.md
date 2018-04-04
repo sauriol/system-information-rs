@@ -6,7 +6,7 @@ A library to detect information about the local system written in Rust.
   * ~~Detect OS~~
     * ~~Test on linux~~
       * Do more testing on distros that aren't Arch
-    * Test on Windows
+    * ~~Test on Windows~~
     * ~~Test on MacOS~~
   * ~~Detect hostname~~
     * ~~Test on linux~~
@@ -19,5 +19,6 @@ A library to detect information about the local system written in Rust.
   * ~~Detect disk space~~
   * ~~Detect memory~~
     * ~~Implement on MacOS~~
-    * Test on Windows
+    * ~~Test on Windows~~
   * Detect CPU information
+    * Implement on Windows
