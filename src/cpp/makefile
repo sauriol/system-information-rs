@@ -2,7 +2,7 @@ CC	= g++
 CFLAGS	= -I/usr/lib
 LDFLAGS	= -lboost_filesystem -lboost_system
 
-all: disk mem-windows
+all: disk
 
 windows: disk mem-windows
 

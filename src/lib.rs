@@ -13,8 +13,7 @@ use regex::Regex;
 /// Enum listing all currently supported OS
 ///
 /// Note: testing has not been completed with all.
-#[derive(Debug)]
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub enum OSType {
     Arch,
     CentOS,
@@ -35,6 +34,7 @@ pub enum OSType {
 /// the kernel and for Windows, the version number will be
 /// the number provided by `ver`. For MacOS, the version
 /// number is the product version number from `sw_vers`
+#[derive(Debug, PartialEq)]
 pub struct OSInformation {
     pub os_type: OSType,
     pub version: String
@@ -106,7 +106,7 @@ pub fn get_hostname() -> Option<String> {
 
 /// Gets the current username for MacOS and Linux systems.
 #[cfg(any(target_os = "linux", target_os = "macos"))]
-fn get_username() -> Option<String> {
+pub fn get_username() -> Option<String> {
     match Command::new("id").args(&["-u", "-n"]).output() {
         Ok(output) => Some(String::from_utf8(output.stdout).unwrap().trim().to_owned()),
         Err(why) => panic!("{:?}", why)
@@ -115,13 +115,13 @@ fn get_username() -> Option<String> {
 
 /// Gets the current username for Windows systems.
 #[cfg(target_os = "windows")]
-fn get_username() -> Option<String> {
+pub fn get_username() -> Option<String> {
     winutil::get_user_name()
 }
 
 /// Generates an OSInformation for MacOS.
 #[cfg(target_os = "macos")]
-fn get_os() -> OSInformation {
+pub fn get_os() -> OSInformation {
     let sw_vers: String = match Command::new("sw_vers").arg("-productVersion").output() {
         Ok(sw_vers) => String::from_utf8(sw_vers.stdout).unwrap().trim().to_owned(),
         Err(why) => panic!("{:?}", why)
@@ -137,7 +137,7 @@ fn get_os() -> OSInformation {
 ///
 /// Currently only tested on Arch Linux.
 #[cfg(target_os = "linux")]
-fn get_os() -> OSInformation {
+pub fn get_os() -> OSInformation {
     if Path::new("/etc/arch-release").exists() {
         OSInformation {
             os_type: OSType::Arch,
@@ -262,7 +262,7 @@ fn get_ver() -> String {
 /// [Table for interpretation.](https://en.wikipedia.org/wiki/Ver_(command)#Version_list)
 /// Currently untested.
 #[cfg(target_os = "windows")]
-fn get_os() -> OSInformation {
+pub fn get_os() -> OSInformation {
     let win_ver = match Command::new("ver").output() {
         Ok(ver) => String::from_utf8(ver.stdout).unwrap().trim().to_owned(),
         Err(why) => panic!("{:?}", why)
@@ -278,21 +278,13 @@ fn get_os() -> OSInformation {
 ///
 /// Runs system_information/src/cpp/disk to get total,
 /// free, and in use space for the C or / filesystems.
-pub fn get_disk_info() -> DiskInfo {
+pub fn get_disk_info(fs: &str) -> DiskInfo {
     let mut path = std::env::current_dir().unwrap();
     path.push("src");
     path.push("cpp");
     path.push("disk");
 
     let disk_path = path.to_str().unwrap().to_owned();
-
-    let mut fs = "";
-    if cfg!(windows) {
-        fs = "C:"
-    }
-    else if cfg!(unix) {
-        fs = "/"
-    }
 
     let disk_info = match Command::new(disk_path).arg(fs).output() {
         Ok(info) => String::from_utf8(info.stdout).unwrap(),
@@ -309,8 +301,8 @@ pub fn get_disk_info() -> DiskInfo {
 }
 
 /// Makes the output from get_disk_info() human readable.
-pub fn get_readable_disk_info() -> Vec<String> {
-    let disk_info = get_disk_info();
+pub fn get_readable_disk_info(fs: &str) -> Vec<String> {
+    let disk_info = get_disk_info(fs);
 
     let mut readable_info = Vec::new();
 
@@ -350,7 +342,7 @@ fn readable_bytes(size: u64, si: bool) -> String {
 ///
 /// Reads from /proc/meminfo to get info
 #[cfg(target_os = "linux")]
-fn get_mem_info() -> MemInfo {
+pub fn get_mem_info() -> MemInfo {
     let path = Path::new("/proc/meminfo");
     let meminfo = match File::open(&path) {
         Ok(file) => BufReader::new(file),
@@ -386,7 +378,7 @@ fn get_mem_info() -> MemInfo {
 /// files for Windows, they won't compile if you
 /// aren't on Windows because they need windows.h
 #[cfg(windows)]
-fn get_mem_info() -> MemInfo {
+pub fn get_mem_info() -> MemInfo {
     let mut path = std::env::current_dir().unwrap();
     path.push("src");
     path.push("cpp");
@@ -412,7 +404,7 @@ fn get_mem_info() -> MemInfo {
 ///
 /// Currently not implemented
 #[cfg(target_os = "macos")]
-fn get_mem_info() -> MemInfo {
+pub fn get_mem_info() -> MemInfo {
 
     let mem_info = match Command::new("sysctl").arg("hw.memsize").output() {
         Ok(output) => String::from_utf8(output.stdout).unwrap(),
@@ -442,13 +434,13 @@ pub fn get_readable_mem_info() -> Vec<String> {
     let mut readable_info = Vec::new();
 
     if mem_info.total.is_some() {
-        readable_info.push(readable_bytes(mem_info.total.unwrap(), false));
+        readable_info.push(readable_bytes(mem_info.total.unwrap(), true));
     } else { readable_info.push("".to_owned()); }
     if mem_info.free.is_some() {
-        readable_info.push(readable_bytes(mem_info.free.unwrap(), false));
+        readable_info.push(readable_bytes(mem_info.free.unwrap(), true));
     } else { readable_info.push("".to_owned()); }
     if mem_info.in_use.is_some() {
-        readable_info.push(readable_bytes(mem_info.in_use.unwrap(), false));
+        readable_info.push(readable_bytes(mem_info.in_use.unwrap(), true));
     } else { readable_info.push("".to_owned()); }
 
     return readable_info
@@ -607,7 +599,7 @@ mod tests {
 
     #[test]
     fn disk() {
-        let disk = get_disk_info();
+        let disk = get_disk_info("/");
 
         assert_eq!(disk, DiskInfo {
             total: Some(0),
@@ -618,7 +610,7 @@ mod tests {
 
     #[test]
     fn readable_disk() {
-        let readable_info = get_readable_disk_info();
+        let readable_info = get_readable_disk_info("/");
 
         assert_eq!(readable_info, vec!["".to_owned(), "".to_owned(), "".to_owned()]);
     }
