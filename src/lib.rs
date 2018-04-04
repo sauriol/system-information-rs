@@ -398,9 +398,9 @@ pub fn get_mem_info() -> MemInfo {
 
     let info_vec: Vec<&str> = mem_info.split("\n").collect();
 
-    let mem_total = info_vec[0].parse().unwrap();
-    let mem_free = info_vec[1].parse().unwrap();
-    let mem_in_use = info_vec[2].parse().unwrap();
+    let mem_total = info_vec[0].trim().parse().unwrap();
+    let mem_free = info_vec[1].trim().parse().unwrap();
+    let mem_in_use = info_vec[2].trim().parse().unwrap();
 
     MemInfo {
         total: Some(mem_total),
