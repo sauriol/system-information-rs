@@ -10,11 +10,11 @@ A library to detect information about the local system written in Rust.
     * ~~Test on MacOS~~
   * ~~Detect hostname~~
     * ~~Test on linux~~
-    * Test on Windows
+    * ~~Test on Windows~~
     * ~~Test on MacOS~~
   * ~~Detect username~~
     * ~~Test on linux~~
-    * Test on Windows
+    * ~~Test on Windows~~
     * ~~Test on MacOS~~
   * ~~Detect disk space~~
   * ~~Detect memory~~
