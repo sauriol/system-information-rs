@@ -7,11 +7,11 @@ using std::endl;
 int main()
 {
     MEMORYSTATUSEX memInfo;
-    memInfo.dwLength = sizeOf(MEMORYSTATUSEX);
+    memInfo.dwLength = sizeof(MEMORYSTATUSEX);
     GlobalMemoryStatusEx(&memInfo);
 
     DWORDLONG totalMemPhys = memInfo.ullTotalPhys;
-    DWORDLONG totalmMemAvail = memInfo.ullAvailPhys;
+    DWORDLONG totalMemAvail = memInfo.ullAvailPhys;
     DWORDLONG totalMemInUse = totalMemPhys - totalMemAvail;
 
     cout << totalMemPhys << endl;

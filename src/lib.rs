@@ -263,14 +263,19 @@ fn get_ver() -> String {
 /// Currently untested.
 #[cfg(target_os = "windows")]
 pub fn get_os() -> OSInformation {
-    let win_ver = match Command::new("ver").output() {
-        Ok(ver) => String::from_utf8(ver.stdout).unwrap().trim().to_owned(),
-        Err(why) => panic!("{:?}", why)
+    let systeminfo = match Command::new("systeminfo").output() {
+    	Ok(output) => String::from_utf8(output.stdout).unwrap(),
+    	Err(why) => panic!("{:?}", why),
     };
+
+    let re = Regex::new(r"OS Version:\s+\d+\.\d+\.\d+").unwrap();
+    let mat = re.find(&systeminfo).unwrap();
+    let ver_vec: Vec<&str> = systeminfo[mat.start()..mat.end()].split(":").collect();
+    let win_ver = ver_vec[1].trim();
 
     OSInformation {
         os_type: OSType::Windows,
-        version: win_ver,
+        version: win_ver.to_owned(),
     }
 }
 
@@ -399,10 +404,14 @@ pub fn get_mem_info() -> MemInfo {
 
     let info_vec: Vec<&str> = mem_info.split("\n").collect();
 
+    let mem_total = info_vec[0].trim().parse().unwrap();
+    let mem_free = info_vec[1].trim().parse().unwrap();
+    let mem_in_use = info_vec[2].trim().parse().unwrap();
+
     MemInfo {
-        total: info_vec[0].parse().unwrap(),
-        free: info_vec[1].parse().unwrap(),
-        in_use: info_vec[2].parse().unwrap()
+        total: Some(mem_total),
+        free: Some(mem_free),
+        in_use: Some(mem_in_use)
     }
 }
 
@@ -558,25 +567,25 @@ fn get_cpu_mhz_macos() -> Option<String> {
 #[cfg(target_os = "windows")]
 pub fn get_cpu_info() -> CPUInfo {
     CPUInfo {
-        num: get_cpu_num_macos(),
-        model: get_cpu_model_macos(),
-        mhz: get_cpu_mhz_macos()
+        num: get_cpu_num_windows(),
+        model: get_cpu_model_windows(),
+        mhz: get_cpu_mhz_windows()
     }
 }
 
 #[cfg(target_os = "windows")]
 fn get_cpu_num_windows() -> Option<usize> {
-
+    return Some(1);
 }
 
 #[cfg(target_os = "windows")]
 fn get_cpu_model_windows() -> Option<String> {
-
+    return Some("Nada".to_owned());
 }
 
 #[cfg(target_os = "windows")]
-fn get_cpu_mhz_windows() -> Option<String> {
-
+fn get_cpu_mhz_windows() -> Option<String> {    
+    return Some("nada".to_owned());
 }
 
 #[cfg(test)]
