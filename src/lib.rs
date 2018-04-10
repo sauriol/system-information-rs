@@ -306,9 +306,15 @@ pub fn get_readable_disk_info(fs: &str) -> Vec<String> {
 
     let mut readable_info = Vec::new();
 
-    readable_info.push(readable_bytes(disk_info.total.unwrap(),  true));
-    readable_info.push(readable_bytes(disk_info.free.unwrap(),   true));
-    readable_info.push(readable_bytes(disk_info.in_use.unwrap(), true));
+    if disk_info.total.is_some() {
+        readable_info.push(readable_bytes(disk_info.total.unwrap(),  true));
+    }
+    if disk_info.free.is_some() {
+        readable_info.push(readable_bytes(disk_info.free.unwrap(),   true));
+    }
+    if disk_info.in_use.is_some() {
+        readable_info.push(readable_bytes(disk_info.in_use.unwrap(), true));
+    }
 
     return readable_info
 }
