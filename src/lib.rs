@@ -2,12 +2,18 @@
 extern crate winutil;
 extern crate regex;
 
+#[cfg(target_os = "linux")]
 use std::path::Path;
+#[cfg(target_os = "linux")]
 use std::fs::File;
+#[cfg(target_os = "linux")]
 use std::io::BufReader;
+#[cfg(target_os = "linux")]
 use std::io::BufRead;
+#[cfg(target_os = "linux")]
 use std::io::Read;
 use std::process::Command;
+#[cfg(target_os = "linux")]
 use regex::Regex;
 
 /// Enum listing all currently supported OS
@@ -64,6 +70,7 @@ pub struct CPUInfo {
 
 /// Generates a generic OSInformation for an unknown or
 /// undetectable OS.
+#[cfg(target_os = "linux")]
 fn unknown_os() -> OSInformation {
     OSInformation {
         os_type: OSType::Unknown,
