@@ -591,7 +591,7 @@ fn get_cpu_model_windows() -> Option<String> {
 }
 
 #[cfg(target_os = "windows")]
-fn get_cpu_mhz_windows() -> Option<String> {    
+fn get_cpu_mhz_windows() -> Option<String> {
     return Some("nada".to_owned());
 }
 
